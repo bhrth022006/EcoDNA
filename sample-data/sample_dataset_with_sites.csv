@@ -1,0 +1,15 @@
+species_name,read_count,confidence,site_name,latitude,longitude
+Salmo trutta,1840,0.96,Elkhorn Slough Mouth,36.8108,-121.7870
+Gadus morhua,1230,0.94,Elkhorn Slough Mouth,36.8108,-121.7870
+Mytilus edulis,640,0.92,Elkhorn Slough Mouth,36.8108,-121.7870
+Calanus finmarchicus,415,0.87,Elkhorn Slough Mouth,36.8108,-121.7870
+Thunnus albacares,1580,0.93,Soquel Canyon,36.8340,-121.9210
+Salmo trutta,910,0.95,Soquel Canyon,36.8340,-121.9210
+Laminaria digitata,505,0.81,Soquel Canyon,36.8340,-121.9210
+Homarus americanus,1120,0.89,Carmel Bay Reef,36.5460,-121.9420
+Mytilus edulis,870,0.91,Carmel Bay Reef,36.5460,-121.9420
+Laminaria digitata,760,0.83,Carmel Bay Reef,36.5460,-121.9420
+Undescribed eukaryote sp.,88,0.38,Carmel Bay Reef,36.5460,-121.9420
+Gadus morhua,1340,0.94,Pacific Grove Shelf,36.6260,-121.9160
+Calanus finmarchicus,690,0.86,Pacific Grove Shelf,36.6260,-121.9160
+Salmo trutta,1050,0.96,Pacific Grove Shelf,36.6260,-121.9160

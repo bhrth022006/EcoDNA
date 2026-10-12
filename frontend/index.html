@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BioScope AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --ink:#0b1310;
+  --panel:#101b16;
+  --panel-2:#17251e;
+  --line:rgba(232,237,231,0.09);
+  --text:#e8ede7;
+  --text-dim:#8fa398;
+  --text-dimmer:#5f7268;
+  --a:#4FA76B; /* Adenine - green */
+  --t:#d9694f; /* Thymine - coral */
+  --c:#5b8dbe; /* Cytosine - blue */
+  --g:#c9a64a; /* Guanine - amber */
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--ink);color:var(--text);font-family:'Inter',sans-serif;height:100%;}
+body{display:flex;min-height:100vh;}
+::selection{background:var(--a);color:#08110d;}
+h1,h2,h3,.serif{font-family:'Source Serif 4',serif;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+a{color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ---------- Layout ---------- */
+#sidebar{
+  width:230px;flex:0 0 230px;background:var(--panel);border-right:1px solid var(--line);
+  padding:22px 14px;display:flex;flex-direction:column;gap:2px;
+}
+#brand{display:flex;align-items:center;gap:10px;padding:0 8px 20px 8px;border-bottom:1px solid var(--line);margin-bottom:14px;}
+#brand-trace{width:34px;height:34px;flex:0 0 34px;}
+#brand-text .t1{font-size:15.5px;font-weight:700;letter-spacing:0.2px;}
+#brand-text .t2{font-size:10px;color:var(--text-dim);letter-spacing:0.6px;text-transform:uppercase;margin-top:1px;}
+
+.navbtn{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:none;background:transparent;
+  color:var(--text-dim);font-size:13.5px;font-weight:500;text-align:left;width:100%;transition:background .15s,color .15s;
+}
+.navbtn:hover{background:var(--panel-2);color:var(--text);}
+.navbtn.active{background:var(--panel-2);color:var(--text);box-shadow:inset 2px 0 0 var(--a);}
+.navbtn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55;flex:0 0 6px;}
+.nav-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dimmer);margin:16px 10px 6px;}
+#sidebar-foot{margin-top:auto;padding:10px 8px 0;border-top:1px solid var(--line);font-size:11px;color:var(--text-dimmer);}
+#sidebar-foot .role{color:var(--text-dim);margin-top:4px;}
+
+#main{flex:1;min-width:0;display:flex;flex-direction:column;}
+#topbar{
+  height:60px;flex:0 0 60px;border-bottom:1px solid var(--line);display:flex;align-items:center;
+  justify-content:space-between;padding:0 22px;background:rgba(16,27,22,0.6);backdrop-filter:blur(6px);
+}
+#topbar .view-title{font-size:16px;font-weight:600;}
+#topbar .view-sub{font-size:11.5px;color:var(--text-dim);margin-top:1px;}
+#topbar-right{display:flex;align-items:center;gap:14px;}
+.pill{
+  font-size:11px;padding:4px 9px;border-radius:20px;border:1px solid var(--line);color:var(--text-dim);
+  display:flex;align-items:center;gap:6px;
+}
+.pill .pulse{width:6px;height:6px;border-radius:50%;background:var(--a);box-shadow:0 0 0 0 rgba(79,167,107,.6);animation:pulse 2s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(79,167,107,.55);}70%{box-shadow:0 0 0 6px rgba(79,167,107,0);}100%{box-shadow:0 0 0 0 rgba(79,167,107,0);}}
+
+#content{flex:1;overflow-y:auto;padding:24px 26px 60px;}
+.view{display:none;animation:fadein .25s ease;}
+.view.active{display:block;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ---------- Cards / grid ---------- */
+.grid{display:grid;gap:14px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:2fr 1fr;}
+@media(max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}}
+
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;
+}
+.card h3{margin:0 0 2px;font-size:13px;font-weight:600;}
+.card .sub{font-size:11px;color:var(--text-dim);margin-bottom:10px;}
+
+.stat-card{padding:15px 16px;}
+.stat-card .label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;}
+.stat-card .value{font-family:'Source Serif 4',serif;font-size:28px;font-weight:600;margin-top:6px;}
+.stat-card .delta{font-size:11px;margin-top:5px;color:var(--text-dim);}
+.stat-card .delta.up{color:var(--a);}
+.stat-card .delta.warn{color:var(--t);}
+.stat-card .bar{height:1px;flex:0 0 4px;background:var(--line);}
+
+.section-title{font-size:19px;font-weight:600;margin:26px 0 4px;font-family:'Source Serif 4',serif;}
+.section-sub{font-size:12.5px;color:var(--text-dim);margin-bottom:12px;}
+
+/* ---------- Taxonomy tree ---------- */
+.tree-node{margin-left:16px;}
+.tree-row{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;
+}
+.tree-row:hover{background:var(--panel-2);}
+.tree-row .caret{width:9px;color:var(--text-dimmer);transition:transform .15s;font-size:10px;}
+.tree-row .caret.open{transform:rotate(90deg);}
+.tree-row .rank{font-size:9.5px;text-transform:uppercase;color:var(--text-dimmer);letter-spacing:.5px;width:56px;flex:0 0 56px;}
+.tree-row .name{flex:1;}
+.tree-row .count{font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+.tree-children{display:none;}
+.tree-children.open{display:block;}
+.rank-kingdom>.tree-row .name{font-weight:700;}
+.rank-phylum>.tree-row .name{font-weight:600;}
+
+/* ---------- Table ---------- */
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{text-align:left;color:var(--text-dim);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;
+  padding:8px 10px;border-bottom:1px solid var(--line);}
+td{padding:9px 10px;border-bottom:1px solid rgba(232,237,231,0.05);}
+tr:hover td{background:var(--panel-2);}
+.tag{font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--line);display:inline-block;}
+.tag.lc{color:var(--a);border-color:rgba(79,167,107,.4);}
+.tag.nt{color:var(--g);border-color:rgba(201,166,74,.4);}
+.tag.vu{color:#e0a458;border-color:rgba(224,164,88,.4);}
+.tag.en{color:var(--t);border-color:rgba(217,105,79,.4);}
+.tag.cr{color:#e05555;border-color:rgba(224,85,85,.5);background:rgba(224,85,85,.08);}
+.tag.invasive{color:var(--t);border-color:rgba(217,105,79,.5);}
+
+input[type=text],select{
+  background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:7px;padding:8px 11px;font-size:12.5px;font-family:inherit;
+}
+input[type=text]:focus,select:focus{outline:none;border-color:var(--a);}
+.searchbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.searchbar select{color:var(--text-dim);}
+
+/* ---------- Chatbot ---------- */
+#chat-fab{
+  position:fixed;bottom:22px;right:26px;width:52px;height:52px;border-radius:50%;background:var(--a);
+  display:flex;align-items:center;justify-content:center;border:none;box-shadow:0 6px 18px rgba(0,0,0,.4);z-index:50;
+}
+#chat-panel{
+  position:fixed;bottom:86px;right:26px;width:320px;height:420px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;display:none;flex-direction:column;overflow:hidden;z-index:50;box-shadow:0 12px 32px rgba(0,0,0,.5);
+}
+#chat-panel.open{display:flex;}
+#chat-head{padding:12px 14px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+#chat-body{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+.msg{font-size:12.5px;padding:8px 10px;border-radius:8px;max-width:85%;line-height:1.4;}
+.msg.bot{background:var(--panel-2);align-self:flex-start;}
+.msg.user{background:rgba(79,167,107,.15);align-self:flex-end;}
+#chat-input-row{display:flex;border-top:1px solid var(--line);padding:8px;gap:6px;}
+#chat-input-row input{flex:1;}
+#chat-input-row button{background:var(--a);border:none;color:#08110d;border-radius:7px;padding:0 12px;font-weight:600;font-size:12px;}
+
+/* mini bar chart */
+.mbar-row{display:flex;align-items:center;gap:8px;margin:7px 0;}
+.mbar-label{width:110px;flex:0 0 110px;font-size:11.5px;color:var(--text-dim);}
+.mbar-track{flex:1;height:7px;background:var(--panel-2);border-radius:4px;overflow:hidden;}
+.mbar-fill{height:100%;border-radius:4px;}
+.mbar-val{width:34px;flex:0 0 34px;font-size:11px;font-family:'IBM Plex Mono',monospace;text-align:right;color:var(--text-dim);}
+
+/* geo */
+#geo-svg{width:100%;height:340px;background:var(--panel-2);border-radius:8px;}
+.geo-dot{cursor:pointer;}
+.geo-dot:hover{stroke:#fff;stroke-width:1.5;}
+
+/* prediction */
+.predict-drop{
+  border:1.5px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--text-dim);font-size:12.5px;
+}
+.predict-drop textarea{
+  width:100%;min-height:90px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--text);
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:10px;margin-top:10px;resize:vertical;
+}
+.btn-primary{background:var(--a);color:#08110d;border:none;border-radius:8px;padding:9px 16px;font-weight:600;font-size:12.5px;}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 16px;font-size:12.5px;}
+.result-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);}
+.result-row:last-child{border-bottom:none;}
+.result-rank{width:20px;color:var(--text-dimmer);font-size:12px;font-family:'IBM Plex Mono',monospace;}
+.result-name{flex:1;}
+.result-name .sci{font-style:italic;font-size:13px;}
+.result-name .common{font-size:11px;color:var(--text-dim);}
+.conf-track{width:100px;height:6px;background:var(--panel-2);border-radius:3px;overflow:hidden;}
+.conf-fill{height:100%;background:var(--a);}
+.conf-val{width:40px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);}
+
+.feature-chip{display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:3px 7px;border-radius:5px;margin:3px 4px 0 0;}
+
+.reports-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);}
+.reports-row:last-child{border-bottom:none;}
+.reports-row .name{font-size:13px;font-weight:500;}
+.reports-row .meta{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.icon-btn{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--text-dim);}
+.icon-btn:hover{color:var(--text);}
+</style>
+  <!-- Leaflet: real map tiles. Needs an internet connection; everything else works offline. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <style>
+    .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#1a1f1c;color:#e8ede7;}
+    .leaflet-popup-content{margin:10px 12px;font-family:Inter,sans-serif;font-size:12.5px;}
+    .leaflet-container{background:#0f1411;}
+  </style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div id="brand">
+    <svg id="brand-trace" viewBox="0 0 34 34"><path d="M3 17 C 6 6, 9 28, 12 17 S 18 6, 21 17 S 27 28, 31 17" fill="none" stroke="#4FA76B" stroke-width="1.6"/><path d="M3 17 C 6 24, 9 8, 12 17 S 18 24, 21 17 S 27 8, 31 17" fill="none" stroke="#d9694f" stroke-width="1.2" opacity=".6"/></svg>
+    <div id="brand-text"><div class="t1">BioScope AI</div><div class="t2">eDNA Biodiversity Platform</div></div>
+  </div>
+
+  <div class="nav-section-label">Analyze</div>
+  <button class="navbtn active" data-view="dashboard"><span class="dot"></span>Dashboard</button>
+  <button class="navbtn" data-view="taxonomy"><span class="dot"></span>Taxonomy Explorer</button>
+  <button class="navbtn" data-view="biodiversity"><span class="dot"></span>Biodiversity Metrics</button>
+  <button class="navbtn" data-view="search"><span class="dot"></span>Species Search</button>
+  <button class="navbtn" data-view="geo"><span class="dot"></span>Geographic Distribution</button>
+
+  <div class="nav-section-label">AI Tools</div>
+  <button class="navbtn" data-view="predict"><span class="dot"></span>Species Prediction</button>
+  <button class="navbtn" data-view="compare"><span class="dot"></span>Dataset Comparison</button>
+
+  <div class="nav-section-label">Manage</div>
+  <button class="navbtn" data-view="upload"><span class="dot"></span>Dataset Upload</button>
+  <button class="navbtn" data-view="reports"><span class="dot"></span>Reports</button>
+  <button class="navbtn" data-view="admin"><span class="dot"></span>Admin</button>
+
+  <div id="sidebar-foot">
+    <div>Sample dataset: <span class="mono">edna_riverbend_s3</span></div>
+    <div class="role">Role: Researcher</div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <div>
+      <div class="view-title" id="view-title">Biodiversity Dashboard</div>
+      <div class="view-sub" id="view-sub">Riverbend Wetland Survey &middot; 3 sampling sites &middot; processed 2 hrs ago</div>
+    </div>
+    <div id="topbar-right">
+      <div class="pill" id="backend-status"><span class="pulse"></span>Connecting to backend...</div>
+      <div class="pill"><span class="pulse"></span>Pipeline idle</div>
+      <div class="pill">142 samples processed</div>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="grid grid-4" id="stat-cards"></div>
+
+      <div class="grid grid-2" style="margin-top:14px;">
+        <div class="card">
+          <h3>Top Families by Read Abundance</h3>
+          <div class="sub">Relative abundance across all samples in this dataset</div>
+          <div id="top-families"></div>
+        </div>
+        <div class="card">
+          <h3>Taxonomic Distribution</h3>
+          <div class="sub">Share of identified reads by phylum</div>
+          <div id="phylum-donut"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:14px;">
+        <div class="card">
+          <h3>Processing Status</h3>
+          <div class="sub">Current pipeline run &mdash; edna_riverbend_s3</div>
+          <div id="pipeline-steps"></div>
+        </div>
+        <div class="card">
+          <h3>Alerts</h3>
+          <div class="sub">Conservation &amp; anomaly flags from this dataset</div>
+          <div id="alerts-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAXONOMY -->
+    <div class="view" id="view-taxonomy">
+      <div class="card">
+        <h3>Taxonomic Tree</h3>
+        <div class="sub">Expand to explore Kingdom &rarr; Phylum &rarr; Class &rarr; Order &rarr; Family &rarr; Genus &rarr; Species</div>
+        <div id="tax-tree"></div>
+      </div>
+    </div>
+
+    <!-- BIODIVERSITY -->
+    <div class="view" id="view-biodiversity">
+      <div class="grid grid-4" id="biodiv-cards"></div>
+      <div class="grid grid-2" style="margin-top:14px;">
+        <div class="card">
+          <h3>Species Abundance</h3>
+          <div class="sub">Rank-abundance across detected species (top 12)</div>
+          <div id="abundance-bars"></div>
+        </div>
+        <div class="card">
+          <h3>Rarity &amp; Dominance</h3>
+          <div class="sub">Auto-flagged from abundance distribution</div>
+          <div id="rarity-panel"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <h3>Biodiversity Health Score</h3>
+        <div class="sub">Composite of Shannon diversity, evenness, richness &amp; conservation risk</div>
+        <div id="health-score"></div>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="view" id="view-search">
+      <div class="card">
+        <h3>Species Search Engine</h3>
+        <div class="sub">Search by scientific name, common name, taxonomy level, habitat, or barcode</div>
+        <div class="searchbar">
+          <input type="text" id="search-input" placeholder="Search species, genus, barcode ID..." style="min-width:240px;">
+          <select id="filter-habitat"><option value="">All habitats</option></select>
+          <select id="filter-status"><option value="">All conservation statuses</option></select>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="species-table"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GEO -->
+    <div class="view" id="view-geo">
+      <div class="card">
+        <h3>Geographic Species Distribution</h3>
+        <div class="sub" id="geo-sub">Sampling sites at real coordinates, sized by species richness. Click a marker for its species list.</div>
+        <div id="geo-map" style="height:420px;border-radius:8px;margin-top:10px;background:var(--panel-2);"></div>
+        <div id="geo-sites-list" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- PREDICT -->
+    <div class="view" id="view-predict">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>AI Species Prediction</h3>
+          <div class="sub">Paste an unknown sequence to classify against the reference database</div>
+          <div class="predict-drop">
+            Paste a FASTA/raw DNA sequence below, or
+            <button class="btn-ghost" id="btn-sample-seq" style="margin-left:4px;">use a sample sequence</button>
+            <textarea id="seq-input" placeholder=">unknown_sample_1&#10;ATGCGTACGTTAGC..."></textarea>
+            <div style="margin-top:10px;display:flex;gap:8px;">
+              <button class="btn-primary" id="btn-predict">Run Classification</button>
+              <button class="btn-ghost" id="btn-clear-seq">Clear</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Top Predictions</h3>
+          <div class="sub" id="predict-sub">Awaiting sequence input</div>
+          <div id="predict-results"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <h3>Explainable AI &mdash; Why This Prediction</h3>
+        <div class="sub">Sequence regions and features that most influenced the top match</div>
+        <div id="xai-panel" style="color:var(--text-dim);font-size:12.5px;">Run a classification above to see feature attributions.</div>
+      </div>
+    </div>
+
+    <!-- COMPARE -->
+    <div class="view" id="view-compare">
+      <div class="card">
+        <h3>Dataset Comparison</h3>
+        <div class="sub">Compare biodiversity between two eDNA datasets</div>
+        <div class="searchbar">
+          <select id="cmp-a"></select>
+          <span style="color:var(--text-dim);font-size:12px;align-self:center;">vs</span>
+          <select id="cmp-b"></select>
+        </div>
+        <div id="cmp-result"></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD -->
+    <div class="view" id="view-upload">
+      <div class="card">
+        <h3>Dataset Upload</h3>
+        <div class="sub">Upload real pipeline output as a CSV (columns: species_name, read_count, confidence) — this creates a new dataset on your backend and computes real biodiversity indices from it.</div>
+        <div class="predict-drop">
+          <div style="margin-bottom:10px;">
+            <input type="text" id="upload-dataset-name" placeholder="Dataset name, e.g. Site B — Autumn Survey" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:13px;">
+          </div>
+          <input type="file" id="upload-file-input" accept=".csv" style="margin-bottom:10px;color:var(--text-dim);font-size:12.5px;"><br>
+          <span style="font-size:11px;color:var(--text-dimmer);">Required: species_name, read_count &nbsp;·&nbsp; Optional: confidence, site_name, latitude, longitude<br>Include the last three to place samples on the map at real coordinates.</span><br><br>
+          <button class="btn-primary" id="btn-real-upload">Upload &amp; Process Dataset</button>
+          <button class="btn-ghost" id="btn-simulate-upload" style="margin-left:8px;">Simulate Upload (no backend)</button>
+        </div>
+        <div id="upload-report" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="view" id="view-reports">
+      <div class="card">
+        <h3>Generated Reports</h3>
+        <div class="sub">Publication-ready exports for this dataset</div>
+        <div id="reports-list"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button class="btn-primary" id="btn-gen-report">Generate New Report (PDF)</button>
+          <button class="btn-ghost">Export CSV</button>
+          <button class="btn-ghost">Export Excel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="view" id="view-admin">
+      <div class="grid grid-3">
+        <div class="card"><h3>Users</h3><div class="sub">Role &amp; access management</div><div id="admin-users"></div></div>
+        <div class="card"><h3>ML Models</h3><div class="sub">Active taxonomic classifiers</div><div id="admin-models"></div></div>
+        <div class="card"><h3>System Health</h3><div class="sub">Pipeline &amp; database status</div><div id="admin-health"></div></div>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <h3>Audit Log</h3>
+        <div class="sub">Recent system activity</div>
+        <div id="admin-log"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<button id="chat-fab" title="Ask BioScope AI">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v12H8l-4 4V4z" stroke="#08110d" stroke-width="1.8" fill="none"/></svg>
+</button>
+<div id="chat-panel">
+  <div id="chat-head"><span>BioScope Assistant</span><button class="icon-btn" id="chat-close">Close</button></div>
+  <div id="chat-body"></div>
+  <div id="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Ask about a species, index, or dataset...">
+    <button id="chat-send">Send</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   SIMULATED eDNA DATASET
+   All indices below are computed with real formulas from the
+   abundance counts — this is a working demo dataset, not a
+   live sequencing pipeline.
+   ========================================================= */
+const PHYLA_COLORS = { "Chordata":"#4FA76B","Arthropoda":"#d9694f","Mollusca":"#5b8dbe","Bacillariophyta":"#c9a64a","Annelida":"#8a7fd1","Cyanobacteria":"#4fb3a7" };
+
+/* =========================================================
+   BACKEND INTEGRATION
+   Connects to the FastAPI backend for auth, dataset listing,
+   and real Shannon/Simpson/Pielou numbers computed server-side
+   from stored abundance data. The taxonomy tree, search, and
+   geo views still run on the local SPECIES sample array below
+   because the current backend schema doesn't yet store
+   kingdom/phylum/invasive/habitat fields per observation —
+   see README "Wiring in a real bioinformatics pipeline" for
+   how to extend it.
+   ========================================================= */
+const API_BASE = "http://localhost:8000/api";
+const DEMO_EMAIL = "demo@bioscope.ai";
+const DEMO_PASSWORD = "demo1234";
+let authToken = null;
+let backendDatasetId = null;
+let backendConnected = false;
+
+async function apiRequest(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Request failed: ${res.status}`);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+function setBackendStatus(connected, label){
+  const el = document.getElementById('backend-status');
+  if(!el) return;
+  el.innerHTML = `<span class="pulse" style="background:${connected?'var(--a)':'var(--t)'};"></span>${label}`;
+}
+
+async function connectBackend(){
+  try{
+    setBackendStatus(false, 'Connecting to backend...');
+    const loginData = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+    });
+    authToken = loginData.access_token;
+
+    const datasets = await apiRequest('/datasets');
+    if(!datasets.length){ throw new Error('No datasets on backend yet'); }
+    backendDatasetId = datasets[0].id;
+
+    const metrics = await apiRequest(`/biodiversity/${backendDatasetId}`);
+    backendConnected = true;
+    setBackendStatus(true, `Live: ${datasets[0].name}`);
+    applyBackendMetrics(metrics, datasets[0]);
+    if(typeof loadGeoSites === 'function' && geoMap) loadGeoSites();
+  } catch(err){
+    backendConnected = false;
+    setBackendStatus(false, 'Using local sample data');
+    console.warn('Backend not reachable, staying on sample data:', err.message);
+  }
+}
+
+function applyBackendMetrics(metrics, dataset){
+  // Overlay real backend-computed numbers onto the dashboard stat cards
+  // without touching the taxonomy/geo/search views, which still read SPECIES.
+  const cardsEl = document.getElementById('stat-cards');
+  if(!cardsEl) return;
+  const cards = [
+    {label:"Backend Dataset", value: dataset.name, delta: dataset.location_name || ''},
+    {label:"Species Richness", value: metrics.species_richness, delta:"live from database", cls:"up"},
+    {label:"Shannon Index (H')", value: metrics.shannon_index, delta:"computed server-side"},
+    {label:"Total Reads", value: metrics.total_reads, delta: metrics.dominant_species? `dominant: ${metrics.dominant_species}${metrics.dominant_species_common? ' ('+metrics.dominant_species_common+')' : ''}` : ''},
+  ];
+  cardsEl.innerHTML = cards.map(c=>`
+    <div class="card stat-card">
+      <div class="label">${c.label}</div>
+      <div class="value" style="font-size:${typeof c.value==='string' && c.value.length>12? '16px':'28px'};">${c.value}</div>
+      <div class="delta ${c.cls||''}">${c.delta}</div>
+    </div>`).join('');
+}
+
+const SPECIES = [
+  {kingdom:"Animalia",phylum:"Chordata",class:"Actinopterygii",order:"Cypriniformes",family:"Cyprinidae",genus:"Cyprinus",species:"Cyprinus carpio",common:"Common carp",abundance:412,habitat:"Freshwater",status:"LC",invasive:true,barcode:"COI-3391",confidence:0.97,site:1},
+  {kingdom:"Animalia",phylum:"Chordata",class:"Actinopterygii",order:"Salmoniformes",family:"Salmonidae",genus:"Salmo",species:"Salmo trutta",common:"Brown trout",abundance:88,habitat:"Freshwater",status:"NT",invasive:false,barcode:"COI-1187",confidence:0.94,site:2},
+  {kingdom:"Animalia",phylum:"Chordata",class:"Actinopterygii",order:"Anguilliformes",family:"Anguillidae",genus:"Anguilla",species:"Anguilla anguilla",common:"European eel",abundance:14,habitat:"Freshwater",status:"CR",invasive:false,barcode:"COI-2044",confidence:0.91,site:2},
+  {kingdom:"Animalia",phylum:"Chordata",class:"Amphibia",order:"Anura",family:"Ranidae",genus:"Rana",species:"Rana temporaria",common:"Common frog",abundance:63,habitat:"Wetland",status:"LC",invasive:false,barcode:"COI-0552",confidence:0.9,site:1},
+  {kingdom:"Animalia",phylum:"Chordata",class:"Amphibia",order:"Anura",family:"Bufonidae",genus:"Bufo",species:"Bufo bufo",common:"Common toad",abundance:29,habitat:"Wetland",status:"VU",invasive:false,barcode:"COI-0781",confidence:0.88,site:3},
+  {kingdom:"Animalia",phylum:"Chordata",class:"Aves",order:"Anseriformes",family:"Anatidae",genus:"Anas",species:"Anas platyrhynchos",common:"Mallard",abundance:22,habitat:"Wetland",status:"LC",invasive:false,barcode:"COI-1990",confidence:0.85,site:1},
+  {kingdom:"Animalia",phylum:"Arthropoda",class:"Insecta",order:"Ephemeroptera",family:"Baetidae",genus:"Baetis",species:"Baetis rhodani",common:"Mayfly nymph",abundance:301,habitat:"Freshwater",status:"LC",invasive:false,barcode:"COI-4471",confidence:0.96,site:2},
+  {kingdom:"Animalia",phylum:"Arthropoda",class:"Insecta",order:"Odonata",family:"Libellulidae",genus:"Libellula",species:"Libellula depressa",common:"Broad-bodied chaser",abundance:41,habitat:"Wetland",status:"LC",invasive:false,barcode:"COI-3007",confidence:0.89,site:1},
+  {kingdom:"Animalia",phylum:"Arthropoda",class:"Malacostraca",order:"Decapoda",family:"Cambaridae",genus:"Procambarus",species:"Procambarus clarkii",common:"Red swamp crayfish",abundance:156,habitat:"Freshwater",status:"LC",invasive:true,barcode:"COI-2255",confidence:0.98,site:3},
+  {kingdom:"Animalia",phylum:"Arthropoda",class:"Insecta",order:"Trichoptera",family:"Hydropsychidae",genus:"Hydropsyche",species:"Hydropsyche pellucidula",common:"Caddisfly larva",abundance:187,habitat:"Freshwater",status:"LC",invasive:false,barcode:"COI-3820",confidence:0.93,site:2},
+  {kingdom:"Animalia",phylum:"Mollusca",class:"Bivalvia",order:"Unionida",family:"Unionidae",genus:"Unio",species:"Unio pictorum",common:"Painter's mussel",abundance:19,habitat:"Freshwater",status:"NT",invasive:false,barcode:"COI-0993",confidence:0.87,site:1},
+  {kingdom:"Animalia",phylum:"Mollusca",class:"Gastropoda",order:"Littorinimorpha",family:"Viviparidae",genus:"Viviparus",species:"Viviparus viviparus",common:"River snail",abundance:74,habitat:"Freshwater",status:"LC",invasive:false,barcode:"COI-1441",confidence:0.9,site:3},
+  {kingdom:"Animalia",phylum:"Mollusca",class:"Bivalvia",order:"Venerida",family:"Corbiculidae",genus:"Corbicula",species:"Corbicula fluminea",common:"Asian clam",abundance:233,habitat:"Freshwater",status:"LC",invasive:true,barcode:"COI-2870",confidence:0.95,site:3},
+  {kingdom:"Animalia",phylum:"Annelida",class:"Clitellata",order:"Haplotaxida",family:"Tubificidae",genus:"Tubifex",species:"Tubifex tubifex",common:"Sludge worm",abundance:98,habitat:"Freshwater",status:"LC",invasive:false,barcode:"COI-0410",confidence:0.86,site:2},
+  {kingdom:"Chromista",phylum:"Bacillariophyta",class:"Bacillariophyceae",order:"Naviculales",family:"Naviculaceae",genus:"Navicula",species:"Navicula cryptocephala",common:"Diatom",abundance:520,habitat:"Freshwater",status:"LC",invasive:false,barcode:"rbcL-1120",confidence:0.92,site:1},
+  {kingdom:"Chromista",phylum:"Bacillariophyta",class:"Bacillariophyceae",order:"Cymbellales",family:"Cymbellaceae",genus:"Cymbella",species:"Cymbella affinis",common:"Diatom",abundance:288,habitat:"Freshwater",status:"LC",invasive:false,barcode:"rbcL-0987",confidence:0.88,site:2},
+  {kingdom:"Bacteria",phylum:"Cyanobacteria",class:"Cyanophyceae",order:"Nostocales",family:"Nostocaceae",genus:"Nostoc",species:"Nostoc commune",common:"Cyanobacterium",abundance:145,habitat:"Freshwater",status:"LC",invasive:false,barcode:"16S-3345",confidence:0.83,site:3},
+  {kingdom:"Bacteria",phylum:"Cyanobacteria",class:"Cyanophyceae",order:"Chroococcales",family:"Microcystaceae",genus:"Microcystis",species:"Microcystis aeruginosa",common:"Bloom-forming cyanobacterium",abundance:67,habitat:"Freshwater",status:"LC",invasive:true,barcode:"16S-2201",confidence:0.91,site:1},
+];
+
+// NOTE: these "lat/lng" are SVG pixel positions, not GPS coordinates — they are
+// retained only for the local sample-data views (taxonomy/search/compare) that
+// still group species by site id. The map no longer uses them: it reads real
+// coordinates from the backend via GET /api/datasets/{id}/sites.
+const SITES = [
+  {id:1,name:"Site A — Upper Reach",lat:120,lng:90},
+  {id:2,name:"Site B — Mid Channel",lat:400,lng:150},
+  {id:3,name:"Site C — Wetland Delta",lat:620,lng:250},
+];
+
+let currentPredictSeq = null;
+
+/* ---------- Diversity math ---------- */
+function diversityStats(list){
+  const total = list.reduce((s,x)=>s+x.abundance,0);
+  const props = list.map(x=>x.abundance/total);
+  const shannon = -props.reduce((s,p)=> s + (p>0? p*Math.log(p):0), 0);
+  const simpsonD = props.reduce((s,p)=> s+p*p, 0);
+  const simpson = 1 - simpsonD; // Simpson's diversity index (1-D)
+  const richness = list.length;
+  const evenness = shannon / Math.log(richness);
+  return {total, shannon, simpson, richness, evenness, props};
+}
+
+function renderApp(){
+  const stats = diversityStats(SPECIES);
+
+  /* ---- Dashboard stat cards ---- */
+  const endangered = SPECIES.filter(s=>["EN","CR"].includes(s.status)).length;
+  const invasive = SPECIES.filter(s=>s.invasive).length;
+  const rare = SPECIES.filter(s=> s.abundance/stats.total < 0.01).length;
+  const cards = [
+    {label:"Total Samples", value:"142", delta:"3 sites &middot; 6 timepoints"},
+    {label:"Unique Species", value:stats.richness, delta:"+2 vs last survey", cls:"up"},
+    {label:"Endangered Species", value:endangered, delta: endangered>0? endangered+" flagged for review":"none detected", cls: endangered>0?"warn":""},
+    {label:"Invasive Species", value:invasive, delta: invasive+" of "+stats.richness+" taxa", cls: invasive>0?"warn":""},
+  ];
+  document.getElementById('stat-cards').innerHTML = cards.map(c=>`
+    <div class="card stat-card">
+      <div class="label">${c.label}</div>
+      <div class="value">${c.value}</div>
+      <div class="delta ${c.cls||''}">${c.delta}</div>
+    </div>`).join('');
+
+  /* ---- top families bars ---- */
+  const famMap = {};
+  SPECIES.forEach(s=>{ famMap[s.family] = (famMap[s.family]||0) + s.abundance; });
+  const famArr = Object.entries(famMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const famMax = famArr[0][1];
+  document.getElementById('top-families').innerHTML = famArr.map(([f,v],i)=>`
+    <div class="mbar-row">
+      <div class="mbar-label">${f}</div>
+      <div class="mbar-track"><div class="mbar-fill" style="width:${(v/famMax*100).toFixed(0)}%;background:${["#4FA76B","#d9694f","#5b8dbe","#c9a64a","#8a7fd1","#4fb3a7"][i%6]}"></div></div>
+      <div class="mbar-val">${v}</div>
+    </div>`).join('');
+
+  /* ---- phylum donut (css conic-gradient) ---- */
+  const phyMap = {};
+  SPECIES.forEach(s=>{ phyMap[s.phylum] = (phyMap[s.phylum]||0) + s.abundance; });
+  const phyEntries = Object.entries(phyMap);
+  const phyTotal = phyEntries.reduce((s,[,v])=>s+v,0);
+  let acc = 0;
+  const gradParts = phyEntries.map(([p,v])=>{
+    const start = acc/phyTotal*360; acc += v;
+    const end = acc/phyTotal*360;
+    return `${PHYLA_COLORS[p]||'#888'} ${start}deg ${end}deg`;
+  }).join(',');
+  document.getElementById('phylum-donut').innerHTML = `
+    <div style="display:flex;align-items:center;gap:18px;">
+      <div style="width:120px;height:120px;border-radius:50%;background:conic-gradient(${gradParts});flex:0 0 120px;"></div>
+      <div style="flex:1;">
+        ${phyEntries.map(([p,v])=>`<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;margin:5px 0;">
+          <span style="width:9px;height:9px;border-radius:2px;background:${PHYLA_COLORS[p]||'#888'};flex:0 0 9px;"></span>
+          <span style="flex:1;color:var(--text-dim);">${p}</span>
+          <span class="mono">${(v/phyTotal*100).toFixed(1)}%</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+  /* ---- pipeline steps ---- */
+  const steps = [
+    ["Quality filtering & trimming","complete"],
+    ["Denoising & duplicate removal","complete"],
+    ["Contaminant removal","complete"],
+    ["Taxonomic classification (Kraken2 + ML)","complete"],
+    ["Biodiversity index calculation","complete"],
+    ["Ecological report generation","queued"],
+  ];
+  document.getElementById('pipeline-steps').innerHTML = steps.map(([label,st])=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12.5px;">
+      <span style="width:8px;height:8px;border-radius:50%;background:${st==='complete'?'var(--a)':'var(--text-dimmer)'};flex:0 0 8px;"></span>
+      <span style="flex:1;color:${st==='complete'?'var(--text)':'var(--text-dim)'};">${label}</span>
+      <span style="font-size:10.5px;color:var(--text-dimmer);text-transform:uppercase;">${st}</span>
+    </div>`).join('');
+
+  /* ---- alerts ---- */
+  const alerts = [];
+  SPECIES.filter(s=>["EN","CR"].includes(s.status)).forEach(s=> alerts.push({t:"Endangered species detected",d:`${s.species} (${s.common}) — IUCN ${s.status}`,c:"var(--t)"}));
+  SPECIES.filter(s=>s.invasive).forEach(s=> alerts.push({t:"Invasive species detected",d:`${s.species} — ecological risk review recommended`,c:"var(--g)"}));
+  document.getElementById('alerts-list').innerHTML = alerts.slice(0,5).map(a=>`
+    <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12px;">
+      <span style="width:6px;height:6px;border-radius:50%;background:${a.c};margin-top:5px;flex:0 0 6px;"></span>
+      <div><div style="font-weight:500;">${a.t}</div><div style="color:var(--text-dim);">${a.d}</div></div>
+    </div>`).join('') || '<div style="color:var(--text-dim);font-size:12px;">No active alerts.</div>';
+
+  renderTaxonomyTree();
+  renderBiodiversity(stats);
+  renderSearch();
+  renderGeo();
+  renderCompareOptions();
+  renderReports();
+  renderAdmin();
+}
+
+/* ---------- Taxonomy tree ---------- */
+function buildTaxTree(){
+  const root = {};
+  SPECIES.forEach(s=>{
+    root[s.kingdom] = root[s.kingdom] || {};
+    root[s.kingdom][s.phylum] = root[s.kingdom][s.phylum] || {};
+    root[s.kingdom][s.phylum][s.class] = root[s.kingdom][s.phylum][s.class] || {};
+    root[s.kingdom][s.phylum][s.class][s.order] = root[s.kingdom][s.phylum][s.class][s.order] || {};
+    root[s.kingdom][s.phylum][s.class][s.order][s.family] = root[s.kingdom][s.phylum][s.class][s.order][s.family] || {};
+    root[s.kingdom][s.phylum][s.class][s.order][s.family][s.genus] = root[s.kingdom][s.phylum][s.class][s.order][s.family][s.genus] || [];
+    root[s.kingdom][s.phylum][s.class][s.order][s.family][s.genus].push(s);
+  });
+  return root;
+}
+function countLeaves(node){
+  if(Array.isArray(node)) return node.length;
+  return Object.values(node).reduce((s,v)=>s+countLeaves(v),0);
+}
+function renderTaxNode(name, node, rank, depth){
+  const id = (name+rank+depth+Math.random()).replace(/[^a-zA-Z0-9]/g,'');
+  const isLeafArr = Array.isArray(node);
+  const count = countLeaves(node);
+  let childrenHtml = '';
+  if(isLeafArr){
+    childrenHtml = node.map(s=>`
+      <div class="tree-row" style="padding-left:${(depth+1)*14}px;">
+        <span class="rank">species</span>
+        <span class="name" style="font-style:italic;">${s.species}</span>
+        <span class="count">${s.abundance} reads &middot; ${(s.confidence*100).toFixed(0)}%</span>
+      </div>`).join('');
+  } else {
+    childrenHtml = Object.entries(node).map(([k,v])=> renderTaxNode(k, v, nextRank(rank), depth+1)).join('');
+  }
+  return `
+    <div class="tree-node rank-${rank}">
+      <div class="tree-row" onclick="toggleTree('${id}')" style="padding-left:${depth*14}px;">
+        <span class="caret" id="caret-${id}">&#9656;</span>
+        <span class="rank">${rank}</span>
+        <span class="name">${name}</span>
+        <span class="count">${count} taxa</span>
+      </div>
+      <div class="tree-children" id="tc-${id}">${childrenHtml}</div>
+    </div>`;
+}
+function nextRank(r){
+  const order = ["kingdom","phylum","class","order","family","genus","species"];
+  return order[order.indexOf(r)+1] || "genus";
+}
+function toggleTree(id){
+  document.getElementById('tc-'+id).classList.toggle('open');
+  document.getElementById('caret-'+id).classList.toggle('open');
+}
+function renderTaxonomyTree(){
+  const tree = buildTaxTree();
+  document.getElementById('tax-tree').innerHTML = Object.entries(tree).map(([k,v])=> renderTaxNode(k,v,"kingdom",0)).join('');
+}
+
+/* ---------- Biodiversity view ---------- */
+function renderBiodiversity(stats){
+  const cards = [
+    {label:"Species Richness", value:stats.richness},
+    {label:"Shannon Diversity (H')", value:stats.shannon.toFixed(2)},
+    {label:"Simpson Diversity (1-D)", value:stats.simpson.toFixed(2)},
+    {label:"Evenness (J')", value:stats.evenness.toFixed(2)},
+  ];
+  document.getElementById('biodiv-cards').innerHTML = cards.map(c=>`
+    <div class="card stat-card"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`).join('');
+
+  const ranked = [...SPECIES].sort((a,b)=>b.abundance-a.abundance).slice(0,12);
+  const maxAb = ranked[0].abundance;
+  document.getElementById('abundance-bars').innerHTML = ranked.map((s,i)=>`
+    <div class="mbar-row">
+      <div class="mbar-label" style="font-style:italic;">${s.species}</div>
+      <div class="mbar-track"><div class="mbar-fill" style="width:${(s.abundance/maxAb*100).toFixed(0)}%;background:${PHYLA_COLORS[s.phylum]||'#888'}"></div></div>
+      <div class="mbar-val">${s.abundance}</div>
+    </div>`).join('');
+
+  const total = stats.total;
+  const rareList = SPECIES.filter(s=> s.abundance/total < 0.01).sort((a,b)=>a.abundance-b.abundance);
+  const dominant = [...SPECIES].sort((a,b)=>b.abundance-a.abundance)[0];
+  document.getElementById('rarity-panel').innerHTML = `
+    <div style="font-size:12.5px;margin-bottom:8px;"><b>Dominant species:</b> <span style="font-style:italic;">${dominant.species}</span> (${(dominant.abundance/total*100).toFixed(1)}% of reads)</div>
+    <div style="font-size:12.5px;margin-bottom:6px;"><b>Rare species (&lt;1% relative abundance):</b></div>
+    ${rareList.map(s=>`<div style="font-size:12px;color:var(--text-dim);padding:3px 0;font-style:italic;">${s.species} <span style="color:var(--text-dimmer);font-style:normal;">— ${s.abundance} reads</span></div>`).join('') || '<div style="font-size:12px;color:var(--text-dim);">None detected.</div>'}
+  `;
+
+  // Health score: weighted composite (illustrative formula)
+  const maxShannon = Math.log(stats.richness);
+  const shannonNorm = stats.shannon / maxShannon;
+  const conservationPenalty = SPECIES.filter(s=>["EN","CR"].includes(s.status)).length * 0.03;
+  const invasivePenalty = SPECIES.filter(s=>s.invasive).length * 0.02;
+  let health = (shannonNorm*0.45 + stats.evenness*0.35 + Math.min(stats.richness/25,1)*0.2) - conservationPenalty - invasivePenalty;
+  health = Math.max(0, Math.min(1, health)) * 100;
+  const tier = health>75?"Healthy":health>50?"Moderate":health>30?"Stressed":"Degraded";
+  const tierColor = health>75?"var(--a)":health>50?"var(--g)":health>30?"#e0a458":"var(--t)";
+  document.getElementById('health-score').innerHTML = `
+    <div style="display:flex;align-items:center;gap:20px;">
+      <div style="font-family:'Source Serif 4',serif;font-size:42px;font-weight:700;color:${tierColor};">${health.toFixed(0)}</div>
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:14px;color:${tierColor};margin-bottom:4px;">${tier}</div>
+        <div style="height:8px;background:var(--panel-2);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${health}%;background:${tierColor};"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px;">Composite of Shannon evenness, species richness, and conservation/invasive risk penalties. Illustrative scoring for this demo dataset.</div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Search ---------- */
+function statusTag(status){
+  const map={LC:"lc",NT:"nt",VU:"vu",EN:"en",CR:"cr"};
+  return `<span class="tag ${map[status]||''}">${status}</span>`;
+}
+function renderSearch(){
+  const habitats = [...new Set(SPECIES.map(s=>s.habitat))];
+  const statuses = [...new Set(SPECIES.map(s=>s.status))];
+  const hSel = document.getElementById('filter-habitat');
+  const sSel = document.getElementById('filter-status');
+  hSel.innerHTML = '<option value="">All habitats</option>' + habitats.map(h=>`<option>${h}</option>`).join('');
+  sSel.innerHTML = '<option value="">All conservation statuses</option>' + statuses.map(s=>`<option>${s}</option>`).join('');
+
+  function draw(){
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const hf = hSel.value, sf = sSel.value;
+    const rows = SPECIES.filter(s=>{
+      const matchQ = !q || [s.species,s.common,s.genus,s.family,s.barcode].join(' ').toLowerCase().includes(q);
+      const matchH = !hf || s.habitat===hf;
+      const matchS = !sf || s.status===sf;
+      return matchQ && matchH && matchS;
+    });
+    document.getElementById('species-table').innerHTML = `
+      <thead><tr><th>Species</th><th>Common name</th><th>Family</th><th>Habitat</th><th>Barcode</th><th>Abundance</th><th>Status</th><th>Confidence</th></tr></thead>
+      <tbody>
+      ${rows.map(s=>`<tr>
+        <td style="font-style:italic;">${s.species}</td>
+        <td>${s.common}${s.invasive?' <span class="tag invasive">invasive</span>':''}</td>
+        <td>${s.family}</td>
+        <td>${s.habitat}</td>
+        <td class="mono">${s.barcode}</td>
+        <td class="mono">${s.abundance}</td>
+        <td>${statusTag(s.status)}</td>
+        <td class="mono">${(s.confidence*100).toFixed(0)}%</td>
+      </tr>`).join('') || `<tr><td colspan="8" style="color:var(--text-dim);">No matching species.</td></tr>`}
+      </tbody>`;
+  }
+  document.getElementById('search-input').oninput = draw;
+  hSel.onchange = draw; sSel.onchange = draw;
+  draw();
+}
+
+/* ---------- Geo ---------- */
+let geoMap = null;
+let geoMarkers = [];
+
+function renderGeo(){
+  const mapEl = document.getElementById('geo-map');
+  if(!mapEl || typeof L === 'undefined'){
+    if(mapEl) mapEl.innerHTML = '<div style="padding:20px;color:var(--text-dim);font-size:12.5px;">Map library could not load (needs an internet connection for Leaflet + map tiles).</div>';
+    return;
+  }
+
+  if(!geoMap){
+    geoMap = L.map('geo-map', { scrollWheelZoom:false }).setView([36.74, -121.86], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(geoMap);
+  }
+  loadGeoSites();
+}
+
+async function loadGeoSites(){
+  const sub = document.getElementById('geo-sub');
+  const listEl = document.getElementById('geo-sites-list');
+
+  if(!backendConnected || !backendDatasetId){
+    sub.textContent = 'Backend not connected — no real coordinates to plot. Start the API and reload.';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  try{
+    const sites = await apiRequest(`/datasets/${backendDatasetId}/sites`);
+
+    geoMarkers.forEach(m => geoMap.removeLayer(m));
+    geoMarkers = [];
+
+    if(!sites.length){
+      sub.textContent = 'This dataset has no sampling sites with coordinates. Upload a CSV including site_name, latitude and longitude columns.';
+      listEl.innerHTML = '';
+      return;
+    }
+
+    sub.textContent = `${sites.length} sampling site${sites.length>1?'s':''} at real coordinates, sized by species richness. Click a marker for its species list.`;
+
+    const maxRichness = Math.max(...sites.map(s=>s.species_richness), 1);
+    sites.forEach(site=>{
+      const radius = 10 + (site.species_richness / maxRichness) * 18;
+      const color = '#4FA76B';
+      const marker = L.circleMarker([site.latitude, site.longitude], {
+        radius, color, fillColor:color, fillOpacity:0.35, weight:2
+      }).addTo(geoMap);
+
+      const speciesRows = site.species.map(sp=>
+        `<div style="display:flex;justify-content:space-between;gap:14px;">
+           <span><span style="font-style:italic;">${sp.species_name}</span>${sp.common_name? ` <span style="color:#8fa398;">(${sp.common_name})</span>`:''}</span>
+           <span style="color:#8fa398;">${sp.read_count}</span>
+         </div>`).join('');
+
+      marker.bindPopup(`
+        <div style="min-width:210px;">
+          <div style="font-weight:600;margin-bottom:4px;">${site.name}</div>
+          <div style="color:#8fa398;font-size:11px;margin-bottom:8px;">
+            ${site.latitude.toFixed(4)}, ${site.longitude.toFixed(4)}
+          </div>
+          <div style="font-size:11.5px;line-height:1.7;">
+            <div>Richness: <strong>${site.species_richness}</strong></div>
+            <div>Total reads: <strong>${site.total_reads}</strong></div>
+            <div>Shannon: <strong>${site.shannon_index}</strong></div>
+          </div>
+          <div style="margin-top:8px;border-top:1px solid #2a332d;padding-top:8px;font-size:11.5px;line-height:1.7;">
+            ${speciesRows}
+          </div>
+        </div>`);
+      geoMarkers.push(marker);
+    });
+
+    const bounds = L.latLngBounds(sites.map(s=>[s.latitude, s.longitude]));
+    geoMap.fitBounds(bounds, { padding:[50,50], maxZoom:12 });
+    setTimeout(()=> geoMap.invalidateSize(), 100);
+
+    listEl.innerHTML = `
+      <table class="data-table" style="width:100%;">
+        <thead><tr>
+          <th>Site</th><th>Coordinates</th><th>Richness</th><th>Reads</th><th>Shannon</th><th>Dominant</th>
+        </tr></thead>
+        <tbody>${sites.map(s=>`
+          <tr>
+            <td>${s.name}</td>
+            <td class="mono" style="font-size:11px;">${s.latitude.toFixed(4)}, ${s.longitude.toFixed(4)}</td>
+            <td>${s.species_richness}</td>
+            <td>${s.total_reads}</td>
+            <td>${s.shannon_index}</td>
+            <td style="font-style:italic;">${s.dominant_species || '—'}${s.dominant_species_common? ` <span style="color:var(--text-dim);font-style:normal;">(${s.dominant_species_common})</span>`:''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch(err){
+    sub.textContent = `Could not load sites: ${err.message}`;
+    listEl.innerHTML = '';
+  }
+}
+
+/* ---------- Prediction (simulated classifier) ---------- */
+// This is one of the actual synthetic training sequences (Anguilla anguilla) generated by
+// ml/generate_data.py, so the demo classifier below has real signal to recognize.
+const SAMPLE_SEQ = ">unknown_sample_riverbend_07\nAATCGTGCTTCGCTCTGACTTCACCCCAGCGCTAATAGGTGTGGTGCCGCGGAAAGACTTCAGGACACTTGAGTAGTCCAAGCCCGGAAACTCCTACATTGTTAAGTTACTACGATTTATCATCAGTAGATCACGTGGTGTTGAATAGCATGATACGCGATAAAGACTCTTATGCAGCACTCGCTACGATATGGACCCGC";
+document.getElementById('btn-sample-seq').onclick = ()=>{ document.getElementById('seq-input').value = SAMPLE_SEQ; };
+document.getElementById('btn-clear-seq').onclick = ()=>{ document.getElementById('seq-input').value=''; };
+
+const ML_API_URL = `${API_BASE}/predict`; // now served by the same backend as everything else
+
+document.getElementById('btn-predict').onclick = async ()=>{
+  const seq = document.getElementById('seq-input').value.trim();
+  if(!seq){ alert('Paste a sequence first, or use the sample sequence.'); return; }
+
+  document.getElementById('predict-sub').textContent = 'Contacting classifier...';
+  document.getElementById('predict-results').innerHTML = '<div style="color:var(--text-dim);font-size:12.5px;">Running k-mer classification...</div>';
+  document.getElementById('xai-panel').innerHTML = '<div style="color:var(--text-dim);">Waiting for model response...</div>';
+
+  let data;
+  try{
+    const resp = await fetch(ML_API_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({sequence: seq})
+    });
+    data = await resp.json();
+    if(data.error){ throw new Error(data.error); }
+  } catch(err){
+    document.getElementById('predict-sub').textContent = 'Could not reach the classifier API';
+    document.getElementById('predict-results').innerHTML = `
+      <div style="color:var(--t);font-size:12.5px;line-height:1.6;">
+        Couldn't reach the model at <span class="mono">${ML_API_URL}</span>.<br>
+        Start the backend with: <span class="mono">uvicorn app.main:app --reload --port 8000</span><br>
+        <span style="color:var(--text-dimmer);">(${err.message})</span>
+      </div>`;
+    document.getElementById('xai-panel').innerHTML = '<div style="color:var(--text-dim);">No prediction available.</div>';
+    return;
+  }
+
+  const top = data.predictions.map(p=>{
+    const known = SPECIES.find(s=>s.species===p.species);
+    return {...p, common: p.common_name || (known? known.common : ''), family: known? known.family : '', barcode: known? known.barcode : ''};
+  });
+
+  document.getElementById('predict-sub').textContent = `${top.length} candidate matches from the trained classifier · ${data.sequence_length} bases analyzed`;
+  document.getElementById('predict-results').innerHTML = top.map((s,i)=>`
+    <div class="result-row">
+      <div class="result-rank">#${i+1}</div>
+      <div class="result-name"><div class="sci">${s.species}</div><div class="common">${s.common}${s.family? ' · '+s.family:''}</div></div>
+      <div class="conf-track"><div class="conf-fill" style="width:${(s.confidence*100).toFixed(0)}%;"></div></div>
+      <div class="conf-val">${(s.confidence*100).toFixed(0)}%</div>
+    </div>`).join('');
+
+  const bestMatch = top[0];
+  const chips = (data.influential_kmers||[]).map(k=>`
+    <span class="feature-chip" style="background:rgba(255,255,255,.05);color:var(--a);border:1px solid rgba(79,167,107,.3);">${k.kmer} <span style="color:var(--text-dimmer);">(${(k.importance*100).toFixed(1)}%)</span></span>`).join('');
+  document.getElementById('xai-panel').innerHTML = `
+    <div style="margin-bottom:8px;">Best match <span style="font-style:italic;">${bestMatch.species}</span>${bestMatch.barcode? ' (barcode '+bestMatch.barcode+')':''} at ${(bestMatch.confidence*100).toFixed(0)}% confidence, from a trained RandomForest k-mer classifier. Most influential k-mers present in this sequence (real feature importances from the model):</div>
+    <div>${chips || '<span style="color:var(--text-dim);">No notable k-mers found.</span>'}</div>
+    <div style="margin-top:10px;color:var(--text-dimmer);font-size:11.5px;">Importances come from the trained model's feature_importances_, filtered to k-mers actually present in this sequence — not a hardcoded explanation.</div>`;
+};
+
+/* ---------- Compare ---------- */
+function simpleHash(str){
+  // Deterministic string -> non-negative integer hash, used only to
+  // reproducibly resample abundances for the comparison-view demo dataset.
+  let h = 0;
+  for(let i=0;i<str.length;i++){
+    h = (h << 5) - h + str.charCodeAt(i);
+    h |= 0; // force 32-bit integer
+  }
+  return Math.abs(h);
+}
+
+function renderCompareOptions(){
+  const datasets = ["edna_riverbend_s3 (current)","edna_riverbend_s2 (last season)","edna_highland_creek_s1"];
+  document.getElementById('cmp-a').innerHTML = datasets.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+  document.getElementById('cmp-b').innerHTML = datasets.map((d,i)=>`<option value="${i}" ${i===1?'selected':''}>${d}</option>`).join('');
+  function draw(){
+    // simulate a second dataset by resampling abundances deterministically
+    const shiftSeed = parseInt(document.getElementById('cmp-b').value)+1;
+    const setB = SPECIES.map(s=>({...s, abundance: Math.max(0, Math.round(s.abundance * (0.6 + (simpleHash(s.species+shiftSeed)%50)/100)))})).filter(s=>s.abundance>0);
+    const statsA = diversityStats(SPECIES);
+    const statsB = diversityStats(setB);
+    const namesA = new Set(SPECIES.map(s=>s.species));
+    const namesB = new Set(setB.map(s=>s.species));
+    const common = [...namesA].filter(n=>namesB.has(n));
+    const onlyA = [...namesA].filter(n=>!namesB.has(n));
+    const onlyB = [...namesB].filter(n=>!namesA.has(n));
+    const similarity = (common.length / new Set([...namesA,...namesB]).size * 100).toFixed(1);
+    document.getElementById('cmp-result').innerHTML = `
+      <div class="grid grid-3" style="margin-top:12px;">
+        <div class="card stat-card"><div class="label">Jaccard Similarity</div><div class="value">${similarity}%</div></div>
+        <div class="card stat-card"><div class="label">Shannon &Delta;</div><div class="value">${(statsA.shannon-statsB.shannon).toFixed(2)}</div></div>
+        <div class="card stat-card"><div class="label">Richness &Delta;</div><div class="value">${statsA.richness-statsB.richness}</div></div>
+      </div>
+      <div class="grid grid-3" style="margin-top:14px;">
+        <div><h3 style="font-size:12.5px;">Common species (${common.length})</h3>${common.slice(0,8).map(n=>`<div style="font-size:11.5px;font-style:italic;color:var(--text-dim);padding:2px 0;">${n}</div>`).join('')}</div>
+        <div><h3 style="font-size:12.5px;">Only in A (${onlyA.length})</h3>${onlyA.slice(0,8).map(n=>`<div style="font-size:11.5px;font-style:italic;color:var(--a);padding:2px 0;">${n}</div>`).join('')||'<div style="font-size:11.5px;color:var(--text-dim);">None</div>'}</div>
+        <div><h3 style="font-size:12.5px;">Only in B (${onlyB.length})</h3>${onlyB.slice(0,8).map(n=>`<div style="font-size:11.5px;font-style:italic;color:var(--t);padding:2px 0;">${n}</div>`).join('')||'<div style="font-size:11.5px;color:var(--text-dim);">None</div>'}</div>
+      </div>`;
+  }
+  document.getElementById('cmp-a').onchange = draw;
+  document.getElementById('cmp-b').onchange = draw;
+  draw();
+}
+
+/* ---------- Upload simulation ---------- */
+/* ---------- Real upload (backend) ---------- */
+document.getElementById('btn-real-upload').onclick = async ()=>{
+  const el = document.getElementById('upload-report');
+  const nameInput = document.getElementById('upload-dataset-name');
+  const fileInput = document.getElementById('upload-file-input');
+
+  if(!backendConnected){
+    el.innerHTML = `<div style="color:var(--t);font-size:12.5px;">Backend isn't connected. Make sure the FastAPI server is running on port 8000, then reload this page.</div>`;
+    return;
+  }
+  if(!nameInput.value.trim()){
+    el.innerHTML = `<div style="color:var(--t);font-size:12.5px;">Give the dataset a name first.</div>`;
+    return;
+  }
+  const file = fileInput.files[0];
+  if(!file){
+    el.innerHTML = `<div style="color:var(--t);font-size:12.5px;">Choose a CSV file first.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div style="color:var(--text-dim);font-size:12.5px;">Creating dataset...</div>`;
+  try{
+    // 1. Create the dataset record
+    const dataset = await apiRequest('/datasets', {
+      method: 'POST',
+      body: JSON.stringify({ name: nameInput.value.trim() }),
+    });
+
+    // 2. Upload the CSV (multipart — don't set Content-Type, let the browser add the boundary)
+    el.innerHTML = `<div style="color:var(--text-dim);font-size:12.5px;">Uploading and computing indices...</div>`;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/datasets/${dataset.id}/upload`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+      body: formData,
+    });
+    if(!res.ok){
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.detail || `Upload failed: ${res.status}`);
+    }
+    const observations = await res.json();
+
+    // 3. Pull real computed metrics for the new dataset
+    const metrics = await apiRequest(`/biodiversity/${dataset.id}`);
+
+    el.innerHTML = `
+      <div class="card" style="background:var(--panel-2);">
+        <h3>Uploaded — ${dataset.name}</h3>
+        <div style="font-size:12.5px;line-height:1.9;margin-top:6px;">
+          <div>&#10003; ${observations.length} species records ingested</div>
+          <div>&#10003; ${metrics.total_reads} total reads</div>
+          <div>&#10003; Shannon index: ${metrics.shannon_index}</div>
+          <div>&#10003; Simpson index: ${metrics.simpson_index}</div>
+          <div>&#10003; Species richness: ${metrics.species_richness}</div>
+          <div style="color:var(--text-dimmer);margin-top:6px;">This dataset is now on your backend — switch to it via the dashboard once dataset switching is added, or query it directly at /api/biodiversity/${dataset.id}.</div>
+        </div>
+      </div>`;
+  } catch(err){
+    el.innerHTML = `<div style="color:var(--t);font-size:12.5px;">Upload failed: ${err.message}</div>`;
+  }
+};
+
+document.getElementById('btn-simulate-upload').onclick = ()=>{
+  const el = document.getElementById('upload-report');
+  el.innerHTML = `<div style="color:var(--text-dim);font-size:12.5px;">Validating...</div>`;
+  setTimeout(()=>{
+    el.innerHTML = `
+      <div class="card" style="background:var(--panel-2);">
+        <h3>Validation Report — edna_riverbend_s4.fastq</h3>
+        <div class="mbar-row"><div class="mbar-label">Total sequences</div><div class="mbar-track"></div><div class="mbar-val" style="width:auto;">18,402</div></div>
+        <div style="font-size:12.5px;margin-top:8px;line-height:1.9;">
+          <div>&#10003; 18,211 sequences passed quality filtering</div>
+          <div>&#10003; 84 duplicate sequences removed</div>
+          <div>&#10003; 39 contaminant reads flagged and removed (host DNA)</div>
+          <div style="color:var(--t);">&#9888; 68 sequences below length threshold (excluded)</div>
+          <div style="color:var(--g);">&#9888; 3 samples missing metadata (site coordinates)</div>
+        </div>
+      </div>`;
+  }, 700);
+};
+
+/* ---------- Reports ---------- */
+function renderReports(){
+  const reports = [
+    {name:"Biodiversity Assessment — Riverbend Q3",date:"Jul 28, 2026",type:"PDF",size:"2.4 MB"},
+    {name:"Taxonomic Summary — edna_riverbend_s3",date:"Jul 28, 2026",type:"XLSX",size:"640 KB"},
+    {name:"Species List — Full Export",date:"Jul 21, 2026",type:"CSV",size:"88 KB"},
+  ];
+  document.getElementById('reports-list').innerHTML = reports.map(r=>`
+    <div class="reports-row">
+      <div><div class="name">${r.name}</div><div class="meta">${r.date} &middot; ${r.type} &middot; ${r.size}</div></div>
+      <button class="icon-btn">Download</button>
+    </div>`).join('');
+}
+document.getElementById('btn-gen-report').onclick = function(){
+  this.textContent = "Generating...";
+  setTimeout(()=>{ this.textContent = "Generate New Report (PDF)"; renderReports(); }, 900);
+};
+
+/* ---------- Admin ---------- */
+function renderAdmin(){
+  document.getElementById('admin-users').innerHTML = `
+    <div style="font-size:12.5px;line-height:2;">
+      <div>Dr. A. Reyes <span class="tag lc" style="margin-left:6px;">Admin</span></div>
+      <div>M. Okafor <span class="tag nt" style="margin-left:6px;">Researcher</span></div>
+      <div>J. Lindqvist <span class="tag nt" style="margin-left:6px;">Researcher</span></div>
+      <div>3 students <span class="tag" style="margin-left:6px;">Student</span></div>
+    </div>`;
+  document.getElementById('admin-models').innerHTML = `
+    <div style="font-size:12.5px;line-height:2;">
+      <div>Kraken2 taxonomic classifier <span style="color:var(--a);">active</span></div>
+      <div>Habitat prediction CNN <span style="color:var(--a);">active</span></div>
+      <div>k-mer species classifier v2.3 <span style="color:var(--a);">active</span></div>
+      <div>Contamination detector <span style="color:var(--text-dim);">standby</span></div>
+    </div>`;
+  document.getElementById('admin-health').innerHTML = `
+    <div style="font-size:12.5px;line-height:2;">
+      <div>API — <span style="color:var(--a);">Operational</span></div>
+      <div>Task queue — <span style="color:var(--a);">3 workers idle</span></div>
+      <div>Database — <span style="color:var(--a);">Operational</span></div>
+      <div>Storage — <span style="color:var(--g);">78% used</span></div>
+    </div>`;
+  const logs = [
+    ["Dataset uploaded","edna_riverbend_s3","2 hrs ago"],
+    ["Classification pipeline completed","142 samples","2 hrs ago"],
+    ["Report generated","Biodiversity Assessment Q3","3 hrs ago"],
+    ["User role updated","M. Okafor &rarr; Researcher","1 day ago"],
+  ];
+  document.getElementById('admin-log').innerHTML = logs.map(([a,b,t])=>`
+    <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--line);">
+      <span>${a} <span style="color:var(--text-dim);">— ${b}</span></span><span style="color:var(--text-dimmer);">${t}</span>
+    </div>`).join('');
+}
+
+/* ---------- Nav ---------- */
+const titles = {
+  dashboard:["Biodiversity Dashboard","Riverbend Wetland Survey · 3 sampling sites · processed 2 hrs ago"],
+  taxonomy:["Taxonomy Explorer","Expandable taxonomic tree across all identified reads"],
+  biodiversity:["Biodiversity Metrics","Richness, diversity indices, and community health"],
+  search:["Species Search","Query the identified species catalog"],
+  geo:["Geographic Distribution","Sampling site locations and richness"],
+  predict:["AI Species Prediction","Classify unknown sequences against the reference database"],
+  compare:["Dataset Comparison","Compare biodiversity across surveys"],
+  upload:["Dataset Upload","Add and validate a new eDNA dataset"],
+  reports:["Reports","Publication-ready exports"],
+  admin:["Admin","Users, models, and system health"],
+};
+document.querySelectorAll('.navbtn').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+view).classList.add('active');
+    document.getElementById('view-title').textContent = titles[view][0];
+    document.getElementById('view-sub').textContent = titles[view][1];
+    // Leaflet mis-measures while its container is hidden, so recalculate on reveal
+    if(view === 'geo' && geoMap){
+      setTimeout(()=>{ geoMap.invalidateSize(); loadGeoSites(); }, 120);
+    }
+  };
+});
+
+/* ---------- Chatbot ---------- */
+const chatFab = document.getElementById('chat-fab');
+const chatPanel = document.getElementById('chat-panel');
+const chatBody = document.getElementById('chat-body');
+function addMsg(text, who){
+  const d = document.createElement('div');
+  d.className = 'msg '+who;
+  d.textContent = text;
+  chatBody.appendChild(d);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+chatFab.onclick = ()=>{
+  chatPanel.classList.toggle('open');
+  if(chatBody.children.length===0){ addMsg("Hi — I can answer questions about species, taxonomy, and diversity indices in this dataset. Try asking about Shannon diversity or the European eel.", 'bot'); }
+};
+document.getElementById('chat-close').onclick = ()=> chatPanel.classList.remove('open');
+
+function botReply(q){
+  const ql = q.toLowerCase();
+  if(ql.includes('shannon')){
+    const st = diversityStats(SPECIES);
+    return `Shannon diversity (H') for this dataset is ${st.shannon.toFixed(2)}, based on ${st.richness} species across ${st.total} total reads. Higher values indicate greater diversity and evenness.`;
+  }
+  if(ql.includes('simpson')){
+    const st = diversityStats(SPECIES);
+    return `Simpson's diversity index (1-D) is ${st.simpson.toFixed(2)} — the probability that two randomly drawn reads belong to different species.`;
+  }
+  if(ql.includes('endangered') || ql.includes('conservation')){
+    const list = SPECIES.filter(s=>["EN","CR"].includes(s.status));
+    return list.length? `Flagged for conservation concern: ${list.map(s=>`${s.species} (${s.status})`).join(', ')}.` : "No endangered or critically endangered species detected in this dataset.";
+  }
+  if(ql.includes('invasive')){
+    const list = SPECIES.filter(s=>s.invasive);
+    return `Invasive species detected: ${list.map(s=>s.species).join(', ')}. Consider prioritized monitoring at sites where these dominate read counts.`;
+  }
+  const match = SPECIES.find(s=> ql.includes(s.genus.toLowerCase()) || ql.includes(s.common.toLowerCase()) || ql.includes(s.species.split(' ')[1]));
+  if(match){
+    return `${match.species} (${match.common}): ${match.family}, IUCN status ${match.status}, ${match.abundance} reads detected at ${match.habitat} habitat, classification confidence ${(match.confidence*100).toFixed(0)}%.`;
+  }
+  return "I can answer questions about species in this dataset, diversity indices, endangered or invasive species, and habitats. Try asking about a specific species or index by name.";
+}
+async function sendChat(){
+  const inp = document.getElementById('chat-input');
+  const val = inp.value.trim();
+  if(!val) return;
+  addMsg(val, 'user');
+  inp.value='';
+
+  if(backendConnected && backendDatasetId){
+    try{
+      const data = await apiRequest('/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: val, dataset_id: backendDatasetId }),
+      });
+      addMsg(data.reply, 'bot');
+      return;
+    } catch(err){
+      console.warn('Backend chat failed, falling back to local:', err.message);
+    }
+  }
+  setTimeout(()=> addMsg(botReply(val), 'bot'), 350);
+}
+document.getElementById('chat-send').onclick = sendChat;
+document.getElementById('chat-input').addEventListener('keydown', e=>{ if(e.key==='Enter') sendChat(); });
+
+renderApp();
+connectBackend();
+</script>
+</body>
+</html>
